@@ -1,0 +1,14 @@
+treasure_cruise:
+  build: src/Dockerfile
+  links:
+    - postgres
+
+postgres:
+  image: postgres
+  environment:
+    POSTGRES_USER: tc123
+    POSTGRES_PASSWORD: tc123
+    POSTGRES_DB: MTG
+  ports:
+      - 5432:5432
+  restart: always
