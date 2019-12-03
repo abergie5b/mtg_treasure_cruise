@@ -1,5 +1,6 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import (
+  create_engine,
   Column, 
   Integer, 
   String, 
@@ -58,4 +59,11 @@ class Price(Base):
     foil = Column(Float)
     market = Column(Float)
     market_foil = Column(Float)
+
+def init_db(connection_string):
+    engine = create_engine(connection_string)
+    base.metadata.create_all(engine)
+
+if __name__ == '__main__':
+    init_db('postgres://tc123@postgres')
 

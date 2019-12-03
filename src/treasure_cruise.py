@@ -1,4 +1,5 @@
 import requests
+from database import Price, Card
 
 URL = 'https://api.mtgstocks.com/'
 MAX_PRINT = 52431
