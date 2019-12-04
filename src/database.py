@@ -48,6 +48,7 @@ class Card(Base):
     supertype = Column(String)
     reserved = Column(Boolean)
     card_type = Column(String)
+    updated_at = Column(DateTime)
 
 class Price(Base):
     __tablename__ = 'prices'
