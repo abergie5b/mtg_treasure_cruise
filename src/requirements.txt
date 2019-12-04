@@ -1,2 +1,6 @@
 sqlalchemy
 requests
+aiohttp
+asyncio
+psycopg2
+aiopg

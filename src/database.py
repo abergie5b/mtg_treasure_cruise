@@ -51,45 +51,53 @@ class Card(Base):
     updated_at = Column(DateTime)
 
 class MarketPrice(Base):
-    __tablename__ = 'prices'
+    __tablename__ = 'market_prices'
+    id = Column(Integer, primary_key=True, autoincrement=True)
     card_id = Column('card_id', ForeignKey('cards.id'))
     date = Column(DateTime)
     price = Column(Float)
 
 class LowPrice(Base):
-    __tablename__ = 'prices'
+    __tablename__ = 'low_prices'
+    id = Column(Integer, primary_key=True, autoincrement=True)
     card_id = Column('card_id', ForeignKey('cards.id'))
     date = Column(DateTime)
     price = Column(Float)
 
 class HighPrice(Base):
-    __tablename__ = 'prices'
+    __tablename__ = 'high_prices'
+    id = Column(Integer, primary_key=True, autoincrement=True)
     card_id = Column('card_id', ForeignKey('cards.id'))
     date = Column(DateTime)
     price = Column(Float)
 
 class AvgPrice(Base):
-    __tablename__ = 'prices'
+    __tablename__ = 'avg_prices'
+    id = Column(Integer, primary_key=True, autoincrement=True)
     card_id = Column('card_id', ForeignKey('cards.id'))
     date = Column(DateTime)
     price = Column(Float)
 
 class FoilPrice(Base):
-    __tablename__ = 'prices'
+    __tablename__ = 'foil_prices'
+    id = Column(Integer, primary_key=True, autoincrement=True)
     card_id = Column('card_id', ForeignKey('cards.id'))
     date = Column(DateTime)
     price = Column(Float)
 
 class MarketFoilPrice(Base):
-    __tablename__ = 'prices'
+    __tablename__ = 'market_foil_prices'
+    id = Column(Integer, primary_key=True, autoincrement=True)
     card_id = Column('card_id', ForeignKey('cards.id'))
     date = Column(DateTime)
     price = Column(Float)
 
-def init_db(connection_string):
+def init_db(connection_string, drop=True):
     engine = create_engine(connection_string)
-    base.metadata.create_all(engine)
+    if drop:
+        Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
 
 if __name__ == '__main__':
-    init_db('postgres://tc123@postgres')
+    init_db('postgres://tc123@treasure_cruise_postgres')
 

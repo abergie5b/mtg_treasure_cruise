@@ -1,7 +1,12 @@
 treasure_cruise:
-  build: src/Dockerfile
+  build: src
   links:
     - postgres
+  volumes:
+    - ./src/:/treasure_cruise
+  environment:
+      MODE: prices
+      NUMBER_OF_CARDS: 52431
 
 postgres:
   image: postgres
@@ -10,5 +15,8 @@ postgres:
     POSTGRES_PASSWORD: tc123
     POSTGRES_DB: MTG
   ports:
-      - 5432:5432
+    - 5433:5432
   restart: always
+  volumes:
+      - /var/lib/postgresql/data:/var/lib/postgresql/data
+
