@@ -6,7 +6,7 @@ treasure_cruise:
     - ./src/:/treasure_cruise
   environment:
       MODE: cards
-      PRINT_ID_RANGE: 1-52431
+      PRINT_ID_RANGE: 30-40
 
 postgres:
   image: postgres
