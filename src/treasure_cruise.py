@@ -7,9 +7,11 @@ from database import *
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 
+# Globals
 URL = 'https://api.mtgstocks.com/'
 CONNECTION_STRING = 'postgresql://tc123:tc123@postgres:5432/MTG'
-MAX_PRINT_ID = 52431
+#MAX_PRINT_ID = 52431
+# End Globals
 
 # Dummy Models
 class _Price(dict):
@@ -19,7 +21,9 @@ class _Price(dict):
 class _Card(dict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+# End Dummy Models
 
+# Sync Funcs
 def get_json(url):
     response = requests.get(url)
     return response.json()
@@ -29,15 +33,15 @@ def get_card(print_id):
 
 def get_prices(print_id):
     return get_json(URL + f'prints/{str(print_id)}/prices')
+# End Sync Funcs
 
-async def get_json_async(url):
-    connector = aiohttp.TCPConnector(limit=100)
-    async with aiohttp.ClientSession(connector=connector) as session:
-        async with session.get(url) as response:
-            if response.status == 200:
-                js =  await response.json()
-                return js
-            return {'error': response.text()}
+# Async Funcs
+async def get_json_async(http_session, url):
+    response = await http_session.get(url)
+    if response.status == 200:
+        js =  await response.json()
+        return js
+    return {'error': response.text()}
 
 async def js_to_card(js):
     all_time_high = js['all_time_high']
@@ -88,9 +92,8 @@ async def js_to_card(js):
     )
     return card
 
-async def insert_prices_to_db(session, print_id):
-    url = URL + f'prints/{str(print_id)}/prices'
-    js = await get_json_async(url)
+async def insert_prices_to_db(http_session, db_session, print_id):
+    js = await get_json_async(http_session, URL + f'prints/{str(print_id)}/prices')
     if js.get('error'):
         return _Price()
     prices = {}
@@ -106,20 +109,30 @@ async def insert_prices_to_db(session, print_id):
                           price=row[1])
             prices[price_type].append(price)
             session.add(price)
+    # database calls are blocking for now
     session.commit()
     return prices
 
-async def insert_card_to_db(session, print_id):
+async def insert_card_to_db(http_session, db_session, print_id):
     url = URL + f'prints/{str(print_id)}'
-    js = await get_json_async(url)
+    js = await get_json_async(http_session, url)
     if js.get('error'):
         return _Card()
     print(url, f"{js['name']}|{js['card_set']['name']}")
     card = await js_to_card(js)
-    # block 
+    # database calls are blocking for now
     session.add(card)
     session.commit()
     return card
+
+async def run(func, db_session, print_ids):
+    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(limit=100)) as http_session:
+        await asyncio.gather(
+                *[ func(http_session, db_session, print_id) \
+                   for print_id in print_ids 
+                  ]
+        )
+# End Async Funcs
 
 def main():
     from sys import argv
@@ -132,7 +145,7 @@ def main():
         return [r.id for r in session.query(Card.id)]
 
     def print_usage_and_exit(message=''):
-        print(f'usage: treasure_cruise.py <MODE> <NUMBER_OF_CARDS>\n{message}')
+        print(f'usage: treasure_cruise.py <MODE> [<FIRST_PRINT_ID>-<LAST_PRINT_ID>]\n{message}')
         exit(0)
 
     def parse_args(argv):
@@ -143,26 +156,33 @@ def main():
                 func = insert_prices_to_db
             else:
                 print_usage_and_exit()
-            return func, int(argv[2])
+            return func, map(int, argv[2].split('-'))
         else:
             print_usage_and_exit()
 
     init_db(CONNECTION_STRING, drop=False)
-    session = get_db_session()
+    db_session = get_db_session()
 
-    func, number_of_cards = parse_args(argv)
+    func, (first_print_id, last_print_id) = parse_args(argv)
+    print_id_range = range(first_print_id, last_print_id+1)
+
     if func == insert_card_to_db:
-        print_ids = filter(lambda x: x not in get_all_card_ids_from_db(session), 
-                           range(1, number_of_cards+1)
+        # do not attempt to fetch cards if we already have the record in db
+        print_ids = filter(lambda x: x not in get_all_card_ids_from_db(db_session), 
+                           print_id_range
         )
     elif func == insert_prices_to_db:
-        print_ids = get_all_card_ids_from_db(session)
+        # only attempt to fetch price data if we already have the card record
+        print_ids = filter(lambda x: x in get_all_card_ids_from_db(db_session),
+                           print_id_range
+        )
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
-        asyncio.gather(*[ func(session, print_id) for print_id in print_ids ])
+        run(func, db_session, print_ids)
     )
     loop.close()
+    db_session.close()
 
 if __name__ == '__main__':
     main()

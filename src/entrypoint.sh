@@ -7,12 +7,12 @@ else
     MODE="${MODE}"
 fi
 
-if [ -z "${NUMBER_OF_CARDS}" ]; then
-    echo "NUMBER_OF_CARDS not set, defaulting to 1"
-    NUMBER_OF_CARDS="1"
+if [ -z "${PRINT_ID_RANGE}" ]; then
+    echo "PRINT_ID_RANGE not set, defaulting to 1-2"
+    PRINT_ID_RANGE="1-2"
 else 
-    NUMBER_OF_CARDS="${NUMBER_OF_CARDS}"
+    PRINT_ID_RANGE="${PRINT_ID_RANGE}"
 fi
 
-python3 treasure_cruise.py $MODE $NUMBER_OF_CARDS
+python3 treasure_cruise.py $MODE $PRINT_ID_RANGE
 

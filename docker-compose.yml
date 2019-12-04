@@ -5,8 +5,8 @@ treasure_cruise:
   volumes:
     - ./src/:/treasure_cruise
   environment:
-      MODE: prices
-      NUMBER_OF_CARDS: 52431
+      MODE: cards
+      PRINT_ID_RANGE: 1-52431
 
 postgres:
   image: postgres
