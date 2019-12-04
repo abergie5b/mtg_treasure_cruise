@@ -1,13 +1,26 @@
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import create_engine
 import datetime as dt
 import requests
 import asyncio
 import aiohttp
+import logging
+from typing import *
 
 from database import *
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
+
+def get_logger() -> logging.Logger:
+    logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s %(levelname)s:%(name)s: %(message)s",
+            handlers=[logging.StreamHandler(),
+                      logging.FileHandler("treasure_cruise.log", mode='w')
+                      ],
+    )
+    return logging.getLogger()
 
 # Globals
+logger = get_logger()
 URL = 'https://api.mtgstocks.com/'
 CONNECTION_STRING = 'postgresql://tc123:tc123@postgres:5432/MTG'
 #MAX_PRINT_ID = 52431
@@ -24,26 +37,26 @@ class _Card(dict):
 # End Dummy Models
 
 # Sync Funcs
-def get_json(url):
+def get_json(url:str) -> dict:
     response = requests.get(url)
     return response.json()
 
-def get_card(print_id):
+def get_card(print_id:int) -> dict:
     return get_json(URL + f'prints/{str(print_id)}')
 
-def get_prices(print_id):
+def get_prices(print_id:int) -> dict:
     return get_json(URL + f'prints/{str(print_id)}/prices')
 # End Sync Funcs
 
 # Async Funcs
-async def get_json_async(http_session, url):
+async def get_json_async(http_session:aiohttp.ClientSession, url:str) -> dict:
     response = await http_session.get(url)
     if response.status == 200:
         js =  await response.json()
         return js
     return {'error': response.text()}
 
-async def js_to_card(js):
+async def js_to_card(js:dict) -> Card:
     all_time_high = js['all_time_high']
     all_time_low = js['all_time_low']
     sets = list(map(lambda x: x['set_name'], js['sets']))
@@ -92,7 +105,7 @@ async def js_to_card(js):
     )
     return card
 
-async def insert_prices_to_db(http_session, db_session, print_id):
+async def insert_prices_to_db(http_session:aiohttp.ClientSession, db_session:Session, print_id:int) -> dict:
     js = await get_json_async(http_session, URL + f'prints/{str(print_id)}/prices')
     if js.get('error'):
         return _Price()
@@ -102,30 +115,30 @@ async def insert_prices_to_db(http_session, db_session, print_id):
                                  ):
         prices[price_type] = []
         rows = js.get(price_type)
-        print(f"print_id {print_id}: |{price_type}|count: {len(rows)}|")
+        logger.info(f"print_id {print_id}: |{price_type}|count: {len(rows)}|")
         for row in rows:
             price = Model(card_id=print_id,
                           date=dt.datetime.fromtimestamp(int(row[0])/1000), 
                           price=row[1])
             prices[price_type].append(price)
-            session.add(price)
+            db_session.add(price)
     # database calls are blocking for now
-    session.commit()
+    db_session.commit()
     return prices
 
-async def insert_card_to_db(http_session, db_session, print_id):
+async def insert_card_to_db(http_session:aiohttp.ClientSession, db_session:Session, print_id:int) -> Card:
     url = URL + f'prints/{str(print_id)}'
     js = await get_json_async(http_session, url)
     if js.get('error'):
         return _Card()
-    print(url, f"{js['name']}|{js['card_set']['name']}")
+    logger.info(f"{url}: {js['name']}|{js['card_set']['name']}")
     card = await js_to_card(js)
     # database calls are blocking for now
-    session.add(card)
-    session.commit()
+    db_session.add(card)
+    db_session.commit()
     return card
 
-async def run(func, db_session, print_ids):
+async def run(func:object, db_session:Session, print_ids:List[int]) -> None:
     async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(limit=100)) as http_session:
         await asyncio.gather(
                 *[ func(http_session, db_session, print_id) \
