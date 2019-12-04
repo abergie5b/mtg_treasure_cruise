@@ -50,16 +50,41 @@ class Card(Base):
     card_type = Column(String)
     updated_at = Column(DateTime)
 
-class Price(Base):
+class MarketPrice(Base):
     __tablename__ = 'prices'
     card_id = Column('card_id', ForeignKey('cards.id'))
     date = Column(DateTime)
-    low = Column(Float)
-    high = Column(Float)
-    avg = Column(Float)
-    foil = Column(Float)
-    market = Column(Float)
-    market_foil = Column(Float)
+    price = Column(Float)
+
+class LowPrice(Base):
+    __tablename__ = 'prices'
+    card_id = Column('card_id', ForeignKey('cards.id'))
+    date = Column(DateTime)
+    price = Column(Float)
+
+class HighPrice(Base):
+    __tablename__ = 'prices'
+    card_id = Column('card_id', ForeignKey('cards.id'))
+    date = Column(DateTime)
+    price = Column(Float)
+
+class AvgPrice(Base):
+    __tablename__ = 'prices'
+    card_id = Column('card_id', ForeignKey('cards.id'))
+    date = Column(DateTime)
+    price = Column(Float)
+
+class FoilPrice(Base):
+    __tablename__ = 'prices'
+    card_id = Column('card_id', ForeignKey('cards.id'))
+    date = Column(DateTime)
+    price = Column(Float)
+
+class MarketFoilPrice(Base):
+    __tablename__ = 'prices'
+    card_id = Column('card_id', ForeignKey('cards.id'))
+    date = Column(DateTime)
+    price = Column(Float)
 
 def init_db(connection_string):
     engine = create_engine(connection_string)
