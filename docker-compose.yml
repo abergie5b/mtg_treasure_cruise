@@ -1,12 +1,9 @@
-treasure_cruise:
-  build: src
-  links:
-    - postgres
+notebook:
+  build: src/learning
+  ports:
+    - 8787:8888
   volumes:
-    - ./src/:/treasure_cruise
-  environment:
-      MODE: cards
-      PRINT_ID_RANGE: 30-40
+    - ./src/learning:/notebooks
 
 postgres:
   image: postgres
@@ -14,9 +11,17 @@ postgres:
     POSTGRES_USER: tc123
     POSTGRES_PASSWORD: tc123
     POSTGRES_DB: MTG
-  ports:
-    - 5433:5432
   restart: always
   volumes:
       - /var/lib/postgresql/data:/var/lib/postgresql/data
+
+treasure_cruise:
+  build: src/gathering
+  links:
+    - postgres
+  volumes:
+    - ./src/gathering:/treasure_cruise
+  environment:
+    PRINT_ID_RANGE: 1-52431
+    TCP_CONNECTION_LIMIT: 5
 
