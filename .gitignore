@@ -3,3 +3,4 @@ __pycache__
 *.swo
 *.pyc
 *.log
+src/gathering/data/AllPrintings.sqlite

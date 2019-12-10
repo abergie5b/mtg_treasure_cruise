@@ -22,6 +22,6 @@ treasure_cruise:
   volumes:
     - ./src/gathering:/treasure_cruise
   environment:
-    PRINT_ID_RANGE: 1-52431
-    TCP_CONNECTION_LIMIT: 5
+    CARD_ID_RANGE: 1-52431
+    TCP_CONNECTION_LIMIT: 100
 

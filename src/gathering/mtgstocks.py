@@ -6,6 +6,7 @@ from database import (
     MTGStocksCard, 
     LowPrice, 
     HighPrice, 
+    FoilPrice,
     AvgPrice, 
     MarketPrice, 
     MarketFoilPrice
@@ -22,11 +23,11 @@ class MTGStocks(Gatherer):
         '''
         self.http_session = http_session
         self.db_session = db_session
-        self.cards_url = 'https://api.mtgstocks.com/prints/%s'
-        self.prices_url = 'https://api.mtgstocks.com/prints/%s/prices'
+        self.card_url = 'https://api.mtgstocks.com/prints/%s'
+        self.price_url = 'https://api.mtgstocks.com/prints/%s/prices'
         self.logger = get_logger()
 
-    def insert_prices(self, js:dict) -> dict:
+    def insert_price(self, js:dict) -> dict:
         '''
         '''
         print_id = js['card_id']
@@ -36,18 +37,18 @@ class MTGStocks(Gatherer):
                                     ):
             prices[price_type] = []
             rows = js.get(price_type)
-            self.logger.info(f"|print_id {print_id}|price_type: {price_type}|count: {len(rows)}|")
             for row in rows:
-                price = Model(card_id=print_id,
+                price = Model(mtgstocks_card_id=print_id,
                               date=dt.datetime.fromtimestamp(int(row[0])/1000), 
                               price=row[1]
                 )
                 prices[price_type].append(price)
                 self.db_session.add(price)
             self.db_session.commit()
+        self.logger.info(f"|print_id {print_id}|low: {len(prices['low'])}|high: {len(prices['high'])}|avg: {len(prices['avg'])}|market: {len(prices['market'])}|foil: {len(prices['foil'])}|market foil: {len(prices['market_foil'])}")
         return prices
 
-    def insert_card(self, js:dict) -> Card:
+    def insert_card(self, js:dict) -> MTGStocksCard:
         '''
         '''
         self.logger.info(f"|{js['name']}|set: {js['card_set']['name']}|")
@@ -114,8 +115,8 @@ class MTGStocks(Gatherer):
         return card
 
     def get_card(self, print_id:int) -> dict:
-        return self.get_json(self.cards_url % print_id)
+        return self.get_json(self.card_url % print_id)
 
-    def get_prices(self, print_id:int) -> dict:
-        return self.get_json(self.prices_url % print_id)
+    def get_price(self, print_id:int) -> dict:
+        return self.get_json(self.price_url % print_id)
 
