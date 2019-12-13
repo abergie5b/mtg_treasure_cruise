@@ -45,13 +45,13 @@ class MTGStocks(Gatherer):
                 prices[price_type].append(price)
                 self.db_session.add(price)
             self.db_session.commit()
-        self.logger.info(f"|print_id {print_id}|low: {len(prices['low'])}|high: {len(prices['high'])}|avg: {len(prices['avg'])}|market: {len(prices['market'])}|foil: {len(prices['foil'])}|market foil: {len(prices['market_foil'])}")
+        self.logger.info(f"|card_id: {print_id}|low: {len(prices['low'])}|high: {len(prices['high'])}|avg: {len(prices['avg'])}|market: {len(prices['market'])}|foil: {len(prices['foil'])}|market foil: {len(prices['market_foil'])}")
         return prices
 
     def insert_card(self, js:dict) -> MTGStocksCard:
         '''
         '''
-        self.logger.info(f"|{js['name']}|set: {js['card_set']['name']}|")
+        self.logger.info(f"|{js['name']}|{js['card_set']['name']}|")
         card = self._js_to_card(js)
         self.db_session.add(card)
         self.db_session.commit()

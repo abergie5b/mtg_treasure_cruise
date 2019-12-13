@@ -4,6 +4,18 @@ notebook:
     - 8787:8888
   volumes:
     - ./src/learning:/notebooks
+    - ./src/gathering/data:/notebooks/data
+
+treasure_cruise:
+  build: src/gathering
+  links:
+    - postgres
+  volumes:
+    - ./src/gathering:/treasure_cruise
+  environment:
+    GATHERER_CARD_ID_RANGE: 1-52431
+    GATHERER_TCP_CONNECTION_LIMIT: 10
+    SKIP_ERRORS: 0
 
 postgres:
   image: postgres
@@ -14,14 +26,4 @@ postgres:
   restart: always
   volumes:
       - /var/lib/postgresql/data:/var/lib/postgresql/data
-
-treasure_cruise:
-  build: src/gathering
-  links:
-    - postgres
-  volumes:
-    - ./src/gathering:/treasure_cruise
-  environment:
-    CARD_ID_RANGE: 1-52431
-    TCP_CONNECTION_LIMIT: 100
 

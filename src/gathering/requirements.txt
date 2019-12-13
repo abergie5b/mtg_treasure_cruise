@@ -4,3 +4,5 @@ aiohttp
 asyncio
 psycopg2
 aiopg
+bs4
+lxml

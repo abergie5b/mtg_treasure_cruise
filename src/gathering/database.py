@@ -102,14 +102,14 @@ def init_db(connection_string, drop=True):
         Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
-def get_db_session():
+def _get_db_session():
     engine = create_engine(CONNECTION_STRING)
     Session = sessionmaker(bind=engine)
     return Session()
 
 @contextmanager
 def get_db_context():
-    session = get_db_session()
+    session = _get_db_session()
     try:
         yield session
         session.commit()
@@ -124,11 +124,11 @@ def get_all_card_ids_from_db(session):
     return [r.id for r in ids]
 
 def get_all_card_ids_from_price_tables(session):
-    market_ids = [r.mtgstockscard_id for r in session.query(MarketPrice.mtgstockscard_id).distinct()]
-    low_price_ids = [r.mtgstockscard_id for r in session.query(LowPrice.mtgstockscard_id).distinct()]
-    high_price_ids = [r.mtgstockscard_id for r in session.query(HighPrice.mtgstockscard_id).distinct()]
-    foil_price_ids = [r.mtgstockscard_id for r in session.query(FoilPrice.mtgstockscard_id).distinct()]
-    market_foil_ids = [r.mtgstockscard_id for r in session.query(MarketFoilPrice.mtgstockscard_id).distinct()]
+    market_ids = [r.mtgstocks_card_id for r in session.query(MarketPrice.mtgstocks_card_id).distinct()]
+    low_price_ids = [r.mtgstocks_card_id for r in session.query(LowPrice.mtgstocks_card_id).distinct()]
+    high_price_ids = [r.mtgstocks_card_id for r in session.query(HighPrice.mtgstocks_card_id).distinct()]
+    foil_price_ids = [r.mtgstocks_card_id for r in session.query(FoilPrice.mtgstocks_card_id).distinct()]
+    market_foil_ids = [r.mtgstocks_card_id for r in session.query(MarketFoilPrice.mtgstocks_card_id).distinct()]
     return set(market_ids + low_price_ids + high_price_ids + foil_price_ids + market_foil_ids)
 
 

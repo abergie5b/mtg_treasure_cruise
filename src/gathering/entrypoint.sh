@@ -1,10 +1,10 @@
 #!/bin/bash
 
-if [ -z "${CARD_ID_RANGE}" ]; then
-    echo "CARD_ID_RANGE not set, defaulting to 1-2"
-    CARD_ID_RANGE="1-2"
+if [ -z "${GATHERER_CARD_ID_RANGE}" ]; then
+    echo "GATHERER_CARD_ID_RANGE not set, defaulting to 1-2"
+    GATHERER_CARD_ID_RANGE="1-2"
 else 
-    CARD_ID_RANGE="${CARD_ID_RANGE}"
+    GATHERER_CARD_ID_RANGE="${GATHERER_CARD_ID_RANGE}"
 fi
 
 if test -f "/treasure_cruise/data/AllPrintings.sqlite"; then
@@ -21,5 +21,5 @@ else
     echo "Created treasure_cruise.log for logger output"
 fi
 
-python3 treasure_cruise.py $CARD_ID_RANGE
+python3 treasure_cruise.py $GATHERER_CARD_ID_RANGE
 
