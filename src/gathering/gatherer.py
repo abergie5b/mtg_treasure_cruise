@@ -4,6 +4,7 @@ from aiohttp.client_exceptions import ClientOSError
 from sqlalchemy.orm import Session
 from requests import get
 from typing import List
+from concurrent.futures._base import TimeoutError
 
 from database import get_all_card_ids_from_price_tables, get_all_card_ids_from_db
 from config import random_proxy
@@ -59,9 +60,12 @@ class JsonWebRequest:
         except Exception as e:
             return self.error('Request failed Exception', url, e)
         if response.status == 200:
-            js = await response.json()
-            js['card_id'] = card_id
-            return js
+            try:
+                js = await response.json()
+                js['card_id'] = card_id
+                return js
+            except TimeoutError as e:
+                return self.error('Timed out decoding json', url, e)
         message = f'Request failed (http status code {response.status})'
         text = await response.text()
         error_codes = [ 'Not Found' ]
@@ -111,8 +115,8 @@ class Gatherer(JsonWebRequest):
 
     @staticmethod
     def __insert_task_results_to_db(mode:str, 
-                                   gatherer:object, 
-                                   tasks:list) -> list:
+                                    gatherer:object, 
+                                    tasks:list) -> list:
         results = []
         success = list(filter(lambda x: x.get('error') is None, tasks))
         errors = list(filter(lambda x: x.get('error') is not None, tasks))

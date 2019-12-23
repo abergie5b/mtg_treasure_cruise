@@ -7,8 +7,9 @@ from random import randint
 URL = 'https://api.mtgstocks.com/'
 CONNECTION_STRING = 'postgres://tc123:tc123@localhost:5432/mtg'
 #CONNECTION_STRING = 'postgresql://tc123:tc123@postgres:5432/MTG'
-TCP_CONNECTION_LIMIT = getenv('GATHERER_TCP_CONNECTION_LIMIT') or 100
-PROXY = getenv('GATHERER_PROXY') or 'http://157.245.124.217:3128'
+TCP_CONNECTION_LIMIT = getenv('GATHERER_TCP_CONNECTION_LIMIT') or 5
+HTTP_SESSION_TIMEOUT_MINUTES = getenv('GATHERER_HTTP_SESSION_TIMEOUT_MINUTES') or 30
+HTTP_REQUEST_RATE_LIMIT_SECONDS = getenv('GATHERER_HTTP_REQUEST_RATE_LIMIT_SECONDS') or 1
 LOGFILE_PATH = 'treasure_cruise.log'
 SKIP_ERRORS = bool(int(getenv('SKIP_ERRORS'))) if getenv('SKIP_ERRORS') else True
 
