@@ -3,6 +3,7 @@ from re import findall
 from logger import get_logger
 from sqlalchemy.orm import Session
 from asyncio import get_event_loop
+from asyncio_throttle import Throttler
 from aiohttp import (
     ClientSession, 
     TCPConnector, 
@@ -18,13 +19,14 @@ from config import (
     URL,
     CONNECTION_STRING,
     TCP_CONNECTION_LIMIT,
+    HTTP_SESSION_TIMEOUT_MINUTES,
+    HTTP_REQUEST_RATE_LIMIT_SECONDS,
     LOGFILE_PATH,
     SKIP_ERRORS
 )
 from mtgstocks import MTGStocks
 from gatherer import Gatherer, JsonWebRequest
 
-GATHERERS = [ MTGStocks ]
 
 def get_errors_list_from_logs():
     errors = []
@@ -37,17 +39,19 @@ def get_errors_list_from_logs():
 
 async def main():
 
-    if len(argv) > 1:
+    if len(argv) > 2:
         first_print_id, last_print_id = map(int, argv[1].split('-'))
+        modes = argv[2].strip().split(',')
     else:
-        print(f'usage: treasure_cruise.py [<first_print_id>-<last_print_id>]')
+        print(f'usage: treasure_cruise.py [<first_print_id>-<last_print_id>] [<mode>,<mode>]')
         exit(0)
 
     card_ids = range(first_print_id, last_print_id+1)
 
     logger = get_logger()
-
     logger.info('starting treasure cruise gathering session')
+
+    gatherers = [ MTGStocks ]
     #init_db(CONNECTION_STRING, drop=True)
     with get_db_context() as db_session:
         existing_cards = get_all_card_ids_from_db(db_session)
@@ -57,21 +61,25 @@ async def main():
         card_ids = list(filter(lambda x: x not in existing_cards, card_ids))
 
         logger.info(f'service started for {len(card_ids)} card ids ({first_print_id}-{last_print_id})')
-        logger.info(f'proxying from {JsonWebRequest.Proxy} and tcp connection limit set to {TCP_CONNECTION_LIMIT}')
+        logger.info(f'proxying from {JsonWebRequest.Proxy} with tcp connection limit set to {TCP_CONNECTION_LIMIT}')
+        logger.info(f'http request rate set to {HTTP_REQUEST_RATE_LIMIT_SECONDS} and http session timeout limit set to {HTTP_SESSION_TIMEOUT_MINUTES} minutes')
 
         if SKIP_ERRORS:
             errors_list = get_errors_list_from_logs()
             logger.info(f'{len(list(filter(lambda x: x in errors_list, card_ids)))} cards will be skipped due to previous errors')
             card_ids = list(filter(lambda x: x not in errors_list, card_ids))
 
-        timeout = ClientTimeout(15*60)
-        tcp_connector = TCPConnector(limit=int(TCP_CONNECTION_LIMIT))
-        for gatherer in GATHERERS:
-            async with ClientSession(connector=tcp_connector, timeout=timeout) as http_session:
-                await Gatherer.execute(
-                    gatherer(http_session, db_session), 
-                    card_ids,
-                    modes=['prices']
+        for gatherer in gatherers:
+            async with Throttler(
+                           rate_limit=int(HTTP_REQUEST_RATE_LIMIT_SECONDS)
+                       ), \
+                       ClientSession(
+                           connector=TCPConnector(limit=int(TCP_CONNECTION_LIMIT)), 
+                           timeout=ClientTimeout(int(HTTP_SESSION_TIMEOUT_MINUTES)*60)
+            ) as http_session:
+                await Gatherer.execute(gatherer(http_session, db_session), 
+                                       card_ids,
+                                       modes=modes
                 )
         logger.info(f'there are now {len(get_all_card_ids_from_db(db_session))} cards in the database')
 

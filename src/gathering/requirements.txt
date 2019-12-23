@@ -6,3 +6,4 @@ psycopg2
 aiopg
 bs4
 lxml
+asyncio-throttle
